@@ -4,8 +4,6 @@ const topo = document.querySelector("#topo");
 const menuBotao = document.querySelector(".menu-botao");
 const menu = document.querySelector("#menu");
 const ano = document.querySelector("#ano");
-const form = document.querySelector("#form-contato");
-const status = document.querySelector("#formulario-status");
 const whatsapp = document.querySelector("#atalho-whatsapp");
 
 if (ano) {
@@ -57,65 +55,3 @@ function atualizarTopo() {
 
 window.addEventListener("scroll", atualizarTopo, { passive: true });
 atualizarTopo();
-
-function limparErros() {
-  form?.querySelectorAll(".erro").forEach((campo) => {
-    campo.textContent = "";
-  });
-  form?.querySelectorAll("[aria-invalid]").forEach((campo) => {
-    campo.removeAttribute("aria-invalid");
-  });
-}
-
-function mostrarErros(erros) {
-  Object.entries(erros).forEach(([campo, texto]) => {
-    const aviso = form.querySelector(`[data-erro="${campo}"]`);
-    const entrada = form.querySelector(`[name="${campo}"]`);
-    if (aviso) aviso.textContent = texto;
-    if (entrada) entrada.setAttribute("aria-invalid", "true");
-  });
-}
-
-function definirStatus(texto, tipo) {
-  status.textContent = texto;
-  status.className = `formulario-status ${tipo ? `is-${tipo}` : ""}`.trim();
-}
-
-form?.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  limparErros();
-  definirStatus("", "");
-
-  const botao = form.querySelector("button[type='submit']");
-  const textoOriginal = botao.innerHTML;
-  botao.disabled = true;
-  botao.textContent = "Enviando...";
-
-  try {
-    const destino = new URL(form.getAttribute("action"), window.location.href);
-    const resposta = await fetch(destino, {
-      method: "POST",
-      body: new FormData(form),
-      headers: { Accept: "application/json" },
-    });
-
-    const dados = await resposta.json().catch(() => ({
-      ok: false,
-      message: "Não foi possível ler a resposta do servidor.",
-    }));
-
-    if (!resposta.ok || !dados.ok) {
-      if (dados.erros) mostrarErros(dados.erros);
-      definirStatus(dados.message || "Não foi possível enviar a mensagem.", "erro");
-      return;
-    }
-
-    form.reset();
-    definirStatus(dados.message, "ok");
-  } catch {
-    definirStatus("Falha de conexão. Verifique sua rede e tente de novo.", "erro");
-  } finally {
-    botao.disabled = false;
-    botao.innerHTML = textoOriginal;
-  }
-});
